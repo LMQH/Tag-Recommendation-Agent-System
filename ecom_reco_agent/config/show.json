@@ -1,0 +1,91 @@
+{
+  "llm": {
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/",
+    "api_key": "sk-f6df435f67c648c7852723e1aef076d0",
+    "model_name": "qwen-plus",
+    "model_type": "dashscope",
+    "temperature": 0.2,
+    "timeout": 120,
+    "max_retries": 3
+  },
+  "api": {
+    "base_url": "https://api-show.haoxiny.com/open/api/aiTrim",
+    "timeout": 8.0,
+    "max_results": 50,
+    "max_retries": 0,
+    "retry_delay": 1.0
+  },
+  "agentos": {
+    "port": 14466,
+    "host": "0.0.0.0",
+    "path_prefix": "/ecom_reco_agent",
+    "access_log_console": false,
+    "request_logging": {
+      "skip_info_prefixes": ["/health", "/sessions"],
+      "always_info_prefixes": []
+    }
+  },
+  "search": {
+    "milvus": {
+      "host": "172.16.64.104",
+      "port": 19530,
+      "db_name": "default",
+      "collection_brand": "AI_filter_yuntai_brand",
+      "collection_category": "AI_filter_yuntai_category"
+    },
+    "qwen": {
+      "api_key": "sk-1bf01ad176344a9a9e77290830a2418c",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "embedding_model": "text-embedding-v4",
+      "rerank_model": "qwen3-rerank",
+      "rerank_base_url": "https://dashscope.aliyuncs.com",
+      "rerank_path": "/compatible-api/v1/reranks"
+    },
+    "default_params": {
+      "enable_rerank": true,
+      "category_top_k": 100,
+      "category_top_n": 3,
+      "timeout": 30
+    }
+  },
+  "agent": {
+    "num_history_runs": 10,
+    "max_tool_calls_from_history": 0,
+    "prompt_mode": "layered",
+    "max_query_retry_count": 2,
+    "debug_mode": false,
+    "stream": true,
+    "stream_events": true,
+    "enable_agentic_memory": true,
+    "add_history_to_context": true,
+    "markdown": true,
+    "hitl_session_retention_days": 30
+  },
+  "reasoning_tools": {
+    "add_instructions": true,
+    "add_few_shot": false,
+    "enable_think": true,
+    "enable_analyze": true
+  },
+  "query_normalization": {
+    "top_k": 100,
+    "top_n": 3,
+    "enable_rerank": true,
+    "timeout": 30,
+    "vector_score_threshold": 0.85,
+    "min_high_score_count": 3,
+    "use_smart_rerank": true
+  },
+  "festival_tools": {
+    "days_ahead": 30,
+    "cache_refresh_interval_hours": 24
+  },
+  "logging": {
+    "log_level": 2,
+    "debug_level": "INFO",
+    "log_dir": "log",
+    "log_file": "app.log",
+    "max_bytes": 10485760,
+    "backup_count": 5
+  }
+}

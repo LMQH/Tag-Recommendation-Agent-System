@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试网页界面</title>
+  <link rel="icon" href="data:,">
+  <script src="./assets/lib/marked.min.js"></script>
+
+  <!-- CSS 样式文件 -->
+  <link rel="stylesheet" href="./assets/css/main.css">
+  <link rel="stylesheet" href="./assets/css/layout.css">
+  <link rel="stylesheet" href="./assets/css/markdown.css">
+  <link rel="stylesheet" href="./assets/css/responsive.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <div class="row row-between">
+          <div class="brand">
+            <div class="badge">AI</div>
+            <div>
+              <h1>测试网页界面</h1>
+              <p>版本：v1</p>
+            </div>
+          </div>
+        </div>
+        <button class="ghost-btn" id="newSessionBtn">＋ 新建会话</button>
+        <input class="search" id="searchInput" type="text" placeholder="搜索历史会话">
+        <div class="section-label">历史会话</div>
+        <div class="session-list" id="sessionList"></div>
+        <div class="row">
+          <button class="ghost-btn" id="refreshBtn">刷新列表</button>
+          <button class="ghost-btn" id="configBtn">接口配置</button>
+        </div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="panel">
+        <header class="topbar">
+          <div class="top-left">
+            <button class="icon-btn" id="toggleSidebarBtn" title="展开侧边栏">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M3 12h18M3 6h18M3 18h18"/>
+              </svg>
+            </button>
+            <div class="title">
+              <h2 id="conversationTitle">新对话</h2>
+              <p id="conversationMeta">使用 runs 接口进行流式对话，左侧管理会话历史</p>
+            </div>
+          </div>
+          <div class="top-right">
+            <div class="chip" id="userChip">user_id: test-001</div>
+            <div class="chip" id="apiChip">API: show</div>
+            <button class="icon-btn" id="toggleDisplayPanelBtn" title="展开展示面板">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+        <section class="chat-scroll" id="chatScroll">
+          <div class="messages" id="messages"></div>
+        </section>
+        <footer class="composer-shell">
+          <div class="composer-wrap">
+            <textarea id="messageInput" rows="1" placeholder="给 AI 自动装修助手发送消息"></textarea>
+            <div class="composer-footer">
+              <div class="muted">Enter 发送，Shift + Enter 换行</div>
+              <button class="primary-btn" id="sendBtn">发送</button>
+            </div>
+          </div>
+          <div class="statusbar">
+            <div class="status" id="statusText">已就绪</div>
+            <div class="status" id="countText">0 个会话</div>
+          </div>
+        </footer>
+      </div>
+      <div class="drawer" id="drawer">
+        <div class="drawer-bg" id="drawerBg"></div>
+        <div class="drawer-panel">
+          <h3>接口配置</h3>
+          <p>默认接预演环境。配置会保存在浏览器本地，刷新后仍然生效。</p>
+          <div class="fields">
+            <div class="field">
+              <label for="apiBaseInput">API Base URL</label>
+              <input id="apiBaseInput" type="text" placeholder="https://ai-gateway-show.yunzhonghe.com/ecom_reco_agent">
+            </div>
+            <div class="field">
+              <label for="agentIdInput">Agent ID</label>
+              <input id="agentIdInput" type="text" placeholder="ecom-reco-agent">
+            </div>
+            <div class="field">
+              <label for="userIdInput">User ID</label>
+              <input id="userIdInput" type="text" placeholder="test-001">
+            </div>
+            <div class="field">
+              <label for="pageLimitInput">会话列表加载条数</label>
+              <input id="pageLimitInput" type="number" min="1" max="100" step="1" placeholder="30">
+            </div>
+            <div class="note">主接口使用 `POST /agents/{agent_id}/runs`，会话列表和历史消息使用 `/sessions` 系列接口。</div>
+            <div class="error hidden" id="configError"></div>
+            <div class="success hidden" id="configSuccess"></div>
+            <div class="row">
+              <button class="primary-btn" id="saveConfigBtn">保存配置</button>
+              <button class="ghost-btn" id="closeConfigBtn" style="color:#111;background:#eef0f3;">关闭</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <aside class="display-panel" id="displayPanel">
+      <div class="display-panel-header">
+        <h3>推荐数据展示</h3>
+        <button class="icon-btn" id="closeDisplayPanelBtn" title="关闭展示面板">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="display-panel-content" id="displayPanelContent">
+        <div class="festival-tab-bar-wrap">
+          <div class="festival-tab-bar" id="festivalTabBar"></div>
+        </div>
+        <div class="festival-detail" id="festivalDetail">
+          <div class="display-section">
+            <div class="display-section-title">符合需求的商品分类方案</div>
+            <div class="tags-container" id="categoryTagsForFestival">
+              <div class="empty-tags">请先选择节日</div>
+            </div>
+          </div>
+          <div class="display-section">
+            <div class="display-section-title">符合需求的商品品牌方案</div>
+            <div class="tags-container" id="brandTagsForFestival">
+              <div class="empty-tags">请先选择节日</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="display-panel-footer">
+        <button class="primary-btn" id="confirmRecommendationBtn" disabled>确认并保存推荐数据</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- JavaScript 文件 -->
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>

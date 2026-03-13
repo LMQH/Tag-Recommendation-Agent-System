@@ -1,0 +1,642 @@
+{
+	"info": {
+		"_postman_id": "ecom-reco-agent-api-tests",
+		"name": "AI自动装修助手 - API测试集合",
+		"description": "基于接口开发说明文档的完整API测试集合\n\n服务地址：\n- 预演环境：https://ai-gateway-show.yunzhonghe.com/ecom_reco_agent\n- 本地开发：http://localhost:14466\n\n包含接口：\n1. 主接口：POST /agents/ecom-reco-agent/runs（流式响应）\n2. 会话管理：GET/POST/PATCH/DELETE /sessions 相关接口\n3. 系统接口：健康检查、API 文档等",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. 主接口",
+			"item": [
+				{
+					"name": "执行AI自动装修助手（流式响应）",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 流式响应处理：Postman 对流式响应的支持有限",
+									"// 实际前端需要使用 EventSource 或 fetch + ReadableStream 来解析 SSE 事件流",
+									"// 事件类型（大驼峰命名）：RunStarted, RunContent, RunContentCompleted, RunCompleted, RunError, ToolCallCompleted, CustomEvent",
+									"if (pm.response.code === 200) {",
+									"    var responseText = pm.response.text();",
+									"    console.log(\"流式响应：需要从 SSE 事件中解析数据\");",
+									"    console.log(\"响应内容（前1000字符）: \" + responseText.substring(0, 1000));",
+									"    ",
+									"    // 尝试从响应中提取 session_id（如果返回）",
+									"    // 注意：session_id 通常不会在响应中返回，需要从其他接口获取",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "message",
+									"value": "推荐一些适合送礼的商品",
+									"type": "text",
+									"description": "用户消息（必填）"
+								},
+								{
+									"key": "session_id",
+									"value": "{{session_id}}",
+									"type": "text",
+									"description": "会话 ID（可选，UUID 格式）。不传或传入新 UUID 会自动创建新对话，传入已有 UUID 则继续已有对话"
+								},
+								{
+									"key": "user_id",
+									"value": "{{user_id}}",
+									"type": "text",
+									"description": "用户 ID（可选），用于跨会话记忆功能。不传则不保存用户级记忆"
+								},
+								{
+									"key": "stream",
+									"value": "true",
+									"type": "text",
+									"description": "是否使用流式响应，默认为 true"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/agents/{{agent_id}}/runs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"agents",
+								"{{agent_id}}",
+								"runs"
+							]
+						},
+						"description": "执行 AI 自动装修助手，支持流式响应（SSE 格式）\n\n**请求参数：**\n- `message`（必填）：用户消息\n- `session_id`（可选）：会话 ID（UUID 格式）。**不传或传入新 UUID 会自动创建新对话**，传入已有 UUID 则继续已有对话。建议始终由前端管理 UUID 并传入\n- `user_id`（可选）：用户 ID，用于跨会话记忆功能。不传则不保存用户级记忆\n- `stream`（可选）：是否使用流式响应，默认为 `true`\n\n**响应格式：**\n响应为 Server-Sent Events (SSE) 格式，所有事件名使用大驼峰（PascalCase）命名规范，包含以下事件类型：\n- `RunStarted`：运行开始\n- `RunContent`：聊天消息内容（流式输出，需要累积 content 字段）\n- `RunContentCompleted`：聊天内容输出完成\n- `ToolCallCompleted`：工具调用完成（用于识别临时推荐数据，工具名：build_review_fields）\n- `CustomEvent`：最终推荐数据（JSON 格式，用户确认后发送）\n- `RunCompleted`：运行成功完成\n- `RunError`：运行错误\n\n**数据识别：**\n1. 聊天消息：累积所有 `RunContent` 事件的 `content` 字段\n2. 临时推荐：从 `ToolCallCompleted` 事件中识别 `build_review_fields` 工具的返回数据（检查 `tool_name` 字段）\n3. 最终推荐：从 `CustomEvent` 事件中获取结构化 JSON 数据（用户确认后）\n\n**注意：**\n- Postman 对流式响应的支持有限，建议使用实际前端代码测试\n- 前端需要使用 EventSource 或 fetch + ReadableStream 来解析 SSE 事件流\n- 事件类型使用大驼峰命名（PascalCase），如 `RunStarted`、`ToolCallCompleted` 等"
+					},
+					"response": []
+				}
+			],
+			"description": "主接口：执行 AI 自动装修助手"
+		},
+		{
+			"name": "2. 会话管理",
+			"item": [
+				{
+					"name": "获取会话列表",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 保存第一个会话的 session_id 到环境变量（如果存在）",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.length > 0) {",
+									"        var firstSession = jsonData.data[0];",
+									"        if (firstSession.session_id) {",
+									"            pm.environment.set(\"session_id\", firstSession.session_id);",
+									"            console.log(\"已保存 session_id: \" + firstSession.session_id);",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/sessions?type=agent&component_id={{agent_id}}&user_id={{user_id}}&limit=20&page=1&sort_by=created_at&sort_order=desc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "agent",
+									"description": "会话类型（agent、team、workflow，默认 agent）"
+								},
+								{
+									"key": "component_id",
+									"value": "{{agent_id}}",
+									"description": "按 Agent ID 过滤（如 \"ecom-reco-agent\"）"
+								},
+								{
+									"key": "user_id",
+									"value": "{{user_id}}",
+									"description": "按用户 ID 过滤"
+								},
+								{
+									"key": "session_name",
+									"value": "",
+									"description": "按会话名称过滤（部分匹配）",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "每页返回数量（默认 20）"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "页码（默认 1）"
+								},
+								{
+									"key": "sort_by",
+									"value": "created_at",
+									"description": "排序字段（默认 created_at）"
+								},
+								{
+									"key": "sort_order",
+									"value": "desc",
+									"description": "排序顺序（asc 或 desc，默认 desc）"
+								}
+							]
+						},
+						"description": "获取分页的会话列表，支持过滤和排序\n\n**查询参数：**\n- `type`（可选）：会话类型（agent、team、workflow，默认 agent）\n- `component_id`（可选）：按 Agent ID 过滤（如 \"ecom-reco-agent\"）\n- `user_id`（可选）：按用户 ID 过滤\n- `session_name`（可选）：按会话名称过滤（部分匹配）\n- `limit`（可选）：每页返回数量（默认 20）\n- `page`（可选）：页码（默认 1）\n- `sort_by`（可选）：排序字段（默认 created_at）\n- `sort_order`（可选）：排序顺序（asc 或 desc，默认 desc）\n\n**响应格式：**\n```json\n{\n  \"data\": [\n    {\n      \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"session_name\": \"会话名称\",\n      \"agent_id\": \"ecom-reco-agent\",\n      \"user_id\": \"user_123\",\n      \"created_at\": \"2024-01-15T10:30:00Z\",\n      \"updated_at\": \"2024-01-15T10:30:05Z\"\n    }\n  ],\n  \"total\": 100,\n  \"page\": 1,\n  \"limit\": 20\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "创建会话",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 保存创建的 session_id 到环境变量",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.session_id) {",
+									"        pm.environment.set(\"session_id\", jsonData.session_id);",
+									"        console.log(\"已保存 session_id: \" + jsonData.session_id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_name\": \"商品推荐\",\n    \"user_id\": \"{{user_id}}\",\n    \"agent_id\": \"{{agent_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/sessions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions"
+							]
+						},
+						"description": "预创建一个空会话。创建后，可以在后续的 run 请求中通过 `session_id` 引用该会话。\n\n**请求体：**\n- `session_id`（可选）：会话 ID（UUID 格式）。**不传则自动生成**，传入则使用自定义的 session_id\n- `session_name`（可选）：会话名称\n- `user_id`（可选）：用户 ID\n- `agent_id`（可选）：Agent ID（默认 \"ecom-reco-agent\"）\n- `session_state`（可选）：会话状态对象\n- `metadata`（可选）：元数据对象\n\n**响应格式：**\n```json\n{\n  \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"session_name\": \"商品推荐\",\n  \"agent_id\": \"ecom-reco-agent\",\n  \"user_id\": \"user_123\",\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"updated_at\": \"2024-01-15T10:30:05Z\"\n}\n```\n\n**注意：**\n- `session_id` 是可选参数，不传则自动生成，传入则使用自定义值\n- 响应中包含 `agent_session_id` 和 `session_id` 两个字段，通常值相同，前端主要使用 `session_id`"
+					},
+					"response": []
+				},
+				{
+					"name": "获取会话详情",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/sessions/{{session_id}}?type=agent",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions",
+								"{{session_id}}"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "agent",
+									"description": "会话类型（agent、team、workflow），默认 agent",
+									"disabled": false
+								},
+								{
+									"key": "user_id",
+									"value": "",
+									"description": "用户 ID，用于查询特定用户的会话",
+									"disabled": true
+								}
+							]
+						},
+						"description": "获取指定会话的详细信息，包括元数据、配置和聊天历史。响应格式根据会话类型（agent、team、workflow）而有所不同，此项目中默认使用 Agent 类型会话即可。\n\n**路径参数：**\n- `session_id`（必填）：会话 ID（UUID）\n\n**查询参数：**\n- `type`（可选）：会话类型（agent、team、workflow），默认 `agent`\n- `user_id`（可选）：用户 ID，用于查询特定用户的会话\n- `db_id`（可选）：数据库 ID，用于查询特定数据库的会话\n- `table`（可选）：表名，用于查询特定表的会话\n\n**响应格式（Agent 类型会话）：**\n```json\n{\n  \"user_id\": \"user_123\",\n  \"agent_session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"session_name\": \"商品推荐\",\n  \"session_summary\": {\n    \"summary\": \"用户询问了适合送礼的商品推荐\",\n    \"updated_at\": \"2024-01-15T10:35:00Z\"\n  },\n  \"session_state\": {},\n  \"agent_id\": \"ecom-reco-agent\",\n  \"total_tokens\": 160,\n  \"agent_data\": {\n    \"name\": \"AI自动装修助手\",\n    \"agent_id\": \"ecom-reco-agent\",\n    \"model\": {\n      \"provider\": \"DashScope\",\n      \"name\": \"QwenChat\",\n      \"id\": \"qwen-plus\"\n    }\n  },\n  \"metrics\": {\n    \"input_tokens\": 134,\n    \"output_tokens\": 26,\n    \"total_tokens\": 160\n  },\n  \"metadata\": {},\n  \"chat_history\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"推荐一些适合送礼的商品\",\n      \"created_at\": 1704067200\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"根据您的需求，我为您推荐以下商品...\",\n      \"created_at\": 1704067205\n    }\n  ],\n  \"created_at\": \"2024-01-15T10:30:00Z\",\n  \"updated_at\": \"2024-01-15T10:35:00Z\"\n}\n```\n\n**注意：**\n- 响应中包含 `agent_session_id` 和 `session_id` 两个字段，通常值相同，前端主要使用 `session_id`\n- `chat_history` 字段包含完整的聊天历史记录，包括系统消息\n- `session_summary` 字段包含会话的自动生成摘要\n- `metrics` 字段提供详细的 token 使用统计信息\n- `agent_data` 字段包含 Agent 的配置和模型信息"
+					},
+					"response": []
+				},
+				{
+					"name": "获取会话的所有 Runs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 验证响应格式（直接返回数组，不是包装在 runs 字段中）",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.test(\"响应为数组格式\", function () {",
+									"        pm.expect(jsonData).to.be.an('array');",
+									"    });",
+									"    ",
+									"    // 检查每个 run 是否包含 messages 字段",
+									"    if (jsonData && jsonData.length > 0) {",
+									"        pm.test(\"Run 包含 messages 字段\", function () {",
+									"            pm.expect(jsonData[0]).to.have.property('messages');",
+									"        });",
+									"        ",
+									"        // 检查是否包含 tool_calls 字段",
+									"        if (jsonData[0].tool_calls) {",
+									"            pm.test(\"Run 包含 tool_calls 字段\", function () {",
+									"                pm.expect(jsonData[0].tool_calls).to.be.an('array');",
+									"            });",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/sessions/{{session_id}}/runs?type=agent",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions",
+								"{{session_id}}",
+								"runs"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "agent",
+									"description": "会话类型（agent、team、workflow），默认 agent",
+									"disabled": false
+								},
+								{
+									"key": "user_id",
+									"value": "",
+									"description": "用户 ID，用于过滤特定用户的运行记录",
+									"disabled": true
+								},
+								{
+									"key": "created_after",
+									"value": "",
+									"description": "过滤在此 Unix 时间戳（秒）之后创建的运行",
+									"disabled": true
+								},
+								{
+									"key": "created_before",
+									"value": "",
+									"description": "过滤在此 Unix 时间戳（秒）之前创建的运行",
+									"disabled": true
+								}
+							]
+						},
+						"description": "获取指定会话的所有运行记录的详细信息，包含完整的运行数据、消息、工具调用、事件等。支持按时间范围过滤。\n\n**路径参数：**\n- `session_id`（必填）：会话 ID（UUID）\n\n**查询参数：**\n- `type`（可选）：会话类型（agent、team、workflow），默认 `agent`\n- `user_id`（可选）：用户 ID，用于过滤特定用户的运行记录\n- `created_after`（可选）：过滤在此 Unix 时间戳（秒）之后创建的运行\n- `created_before`（可选）：过滤在此 Unix 时间戳（秒）之前创建的运行\n- `db_id`（可选）：数据库 ID，用于查询特定数据库的运行记录\n- `table`（可选）：表名，用于查询特定表的运行记录\n\n**响应格式：**\n响应为数组格式，直接返回 run 对象数组（不是包装在 `runs` 字段中）：\n```json\n[\n  {\n    \"run_id\": \"fcdf50f0-7c32-4593-b2ef-68a558774340\",\n    \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"run_input\": \"推荐一些适合送礼的商品\",\n    \"content\": \"根据您的需求，我为您推荐以下商品...\",\n    \"status\": \"completed\",\n    \"created_at\": \"2024-01-15T10:30:00Z\",\n    \"metrics\": {\n      \"input_tokens\": 82,\n      \"output_tokens\": 56,\n      \"total_tokens\": 138\n    },\n    \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": \"推荐一些适合送礼的商品\",\n        \"created_at\": 1704067200\n      },\n      {\n        \"role\": \"assistant\",\n        \"content\": \"根据您的需求，我为您推荐以下商品...\",\n        \"created_at\": 1704067205\n      }\n    ],\n    \"tool_calls\": [\n      {\n        \"tool_name\": \"build_review_fields\",\n        \"tool_input\": {\n          \"query\": \"春节送礼\"\n        },\n        \"tool_output\": {\n          \"recommendations\": [...]\n        },\n        \"created_at\": 1704067203\n      }\n    ],\n    \"events\": [...]\n  }\n]\n```\n\n**注意：**\n- 响应直接返回数组，不是包装在 `runs` 字段中\n- 每个 run 对象包含完整的运行信息，包括消息、工具调用、事件等\n- 可以通过 `tool_calls` 字段获取工具调用的详细信息（如 `build_review_fields` 的返回数据）\n- 可以通过 `events` 字段获取运行过程中的所有事件\n- 可以通过 `created_after` 和 `created_before` 参数按时间范围过滤运行记录"
+					},
+					"response": []
+				},
+				{
+					"name": "重命名会话",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_name\": \"手机推荐\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/sessions/{{session_id}}/rename",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions",
+								"{{session_id}}",
+								"rename"
+							]
+						},
+						"description": "重命名会话\n\n**路径参数：**\n- `session_id`（必填）：会话 ID（UUID）\n\n**请求体：**\n- `session_name`（必填）：新会话名称\n\n**响应格式：**\n```json\n{\n  \"session_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"session_name\": \"手机推荐\",\n  \"updated_at\": \"2024-01-15T10:35:00Z\"\n}\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "更新会话",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_name\": \"更新后的名称\",\n    \"metadata\": {\n        \"tags\": [\"推荐\", \"手机\"]\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/sessions/{{session_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions",
+								"{{session_id}}"
+							]
+						},
+						"description": "更新会话信息\n\n**路径参数：**\n- `session_id`（必填）：会话 ID（UUID）\n\n**请求体：**\n- `session_name`（可选）：会话名称\n- `metadata`（可选）：元数据对象"
+					},
+					"response": []
+				},
+				{
+					"name": "删除会话",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/sessions/{{session_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions",
+								"{{session_id}}"
+							]
+						},
+						"description": "删除指定会话\n\n**路径参数：**\n- `session_id`（必填）：会话 ID（UUID）\n\n**响应格式：**\n成功返回 204 No Content"
+					},
+					"response": []
+				},
+				{
+					"name": "批量删除会话",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_ids\": [\n        \"550e8400-e29b-41d4-a716-446655440000\",\n        \"660e8400-e29b-41d4-a716-446655440001\"\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/sessions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sessions"
+							]
+						},
+						"description": "批量删除多个会话\n\n**请求体：**\n- `session_ids`（必填）：要删除的会话 ID 列表\n\n**响应格式：**\n```json\n{\n  \"deleted_count\": 2\n}\n```"
+					},
+					"response": []
+				}
+			],
+			"description": "会话管理接口：支持会话的查询、创建、更新、删除等操作"
+		},
+		{
+			"name": "3. 系统接口",
+			"item": [
+				{
+					"name": "健康检查",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 验证健康检查接口返回正常",
+									"pm.test(\"状态码为 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"响应包含 status 字段\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData.status).to.eql('ok');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "检查服务健康状态\n\n**响应格式：**\n```json\n{\n  \"status\": \"ok\",\n  \"instantiated_at\": \"2026-03-03T02:32:02.221693Z\"\n}\n```\n\n**用途：**\n- 用于监控服务是否正常运行\n- 可用于负载均衡器的健康检查\n- 返回服务实例化时间"
+					},
+					"response": []
+				},
+				{
+					"name": "API 文档（Swagger）",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/docs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs"
+							]
+						},
+						"description": "访问 Swagger API 文档页面\n\n**说明：**\n- 这是一个 HTML 页面，在浏览器中打开可以查看完整的 API 文档\n- 支持交互式测试 API 接口\n- 包含所有接口的详细说明和参数说明\n\n**访问方式：**\n在浏览器中打开：`{{base_url}}/docs`"
+					},
+					"response": []
+				},
+				{
+					"name": "API 文档（ReDoc）",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/redoc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"redoc"
+							]
+						},
+						"description": "访问 ReDoc API 文档页面\n\n**说明：**\n- 这是另一种格式的 API 文档页面\n- 提供更简洁的文档展示方式\n- 适合阅读和查看 API 规范\n\n**访问方式：**\n在浏览器中打开：`{{base_url}}/redoc`"
+					},
+					"response": []
+				},
+				{
+					"name": "OpenAPI JSON",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 验证 OpenAPI 规范格式",
+									"pm.test(\"状态码为 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"响应为有效的 JSON\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"    pm.expect(jsonData).to.have.property('openapi');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/openapi.json",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"openapi.json"
+							]
+						},
+						"description": "获取 OpenAPI 规范 JSON\n\n**说明：**\n- 返回完整的 OpenAPI 3.0 规范文档\n- 可用于生成客户端代码\n- 可用于导入到其他 API 文档工具\n\n**响应格式：**\n返回 OpenAPI 3.0 规范的 JSON 对象"
+					},
+					"response": []
+				}
+			],
+			"description": "系统级接口：健康检查、API 文档等"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:14466",
+			"type": "string"
+		},
+		{
+			"key": "base_url_show",
+			"value": "https://ai-gateway-show.yunzhonghe.com",
+			"type": "string"
+		},
+		{
+			"key": "agent_id",
+			"value": "ecom-reco-agent",
+			"type": "string"
+		},
+		{
+			"key": "session_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "user_123",
+			"type": "string"
+		}
+	]
+}

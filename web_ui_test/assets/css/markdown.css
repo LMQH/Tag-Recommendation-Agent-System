@@ -1,0 +1,53 @@
+.bubble {
+  line-height: 1.7;
+  word-break: break-word;
+}
+.bubble p { margin: 0.5em 0; }
+.bubble p:first-child { margin-top: 0; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble h1, .bubble h2, .bubble h3 { margin: 0.8em 0 0.4em; font-weight: 600; }
+.bubble h1 { font-size: 1.5em; }
+.bubble h2 { font-size: 1.3em; }
+.bubble h3 { font-size: 1.15em; }
+.bubble ul, .bubble ol { margin: 0.5em 0; padding-left: 1.8em; }
+.bubble li { margin: 0.3em 0; }
+.bubble code {
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  background: rgba(0,0,0,.05);
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 0.9em;
+}
+.bubble pre {
+  margin: 0.8em 0;
+  padding: 1em;
+  border-radius: 8px;
+  background: rgba(0,0,0,.05);
+  overflow-x: auto;
+}
+.bubble pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 0.85em;
+}
+.bubble blockquote {
+  margin: 0.8em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid #ddd;
+  color: #666;
+  background: rgba(0,0,0,.02);
+}
+.bubble a {
+  color: #0066cc;
+  text-decoration: underline;
+}
+.bubble table {
+  margin: 0.8em 0;
+  border-collapse: collapse;
+  width: 100%;
+}
+.bubble th, .bubble td {
+  padding: 0.5em 0.8em;
+  border: 1px solid #ddd;
+}
+.bubble th { background: rgba(0,0,0,.03); font-weight: 600; }

@@ -1,0 +1,23 @@
+@media (max-width: 960px) {
+  .app { grid-template-columns: 0 1fr; }
+  .sidebar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: min(88vw, 320px);
+    z-index: 20;
+    transform: translateX(-100%);
+    transition: transform .24s ease;
+  }
+  .app.mobile-open .sidebar { transform: translateX(0); }
+  .app.mobile-open::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(15,23,42,.32);
+    z-index: 10;
+  }
+  .main { padding: 0; }
+  .panel { border-radius: 0; height: 100vh; }
+  .topbar, .composer-shell { padding-left: 14px; padding-right: 14px; }
+  .chat-scroll { padding-left: 14px; padding-right: 14px; }
+}

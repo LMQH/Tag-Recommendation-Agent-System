@@ -1,0 +1,33 @@
+:root {
+  --bg: #f5f5f5;
+  --panel: #ffffff;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --text: #111827;
+  --sidebar: #171717;
+  --sidebar-hover: #262626;
+  --inverse: #fafafa;
+  --accent: #111111;
+  --shadow: 0 14px 40px rgba(17, 24, 39, 0.08);
+  --sidebar-width: 288px;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(180deg, #fbfbfb, #f1f3f5);
+  color: var(--text);
+}
+body { overflow: hidden; }
+button, input, textarea { font: inherit; }
+button { border: 0; cursor: pointer; }
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr 0;
+  height: 100vh;
+  transition: grid-template-columns .24s ease;
+}
+.app.collapsed { grid-template-columns: 0 1fr 0; }
+.app.display-open { grid-template-columns: var(--sidebar-width) 1fr 360px; }
+.app.collapsed.display-open { grid-template-columns: 0 1fr 360px; }

@@ -1,0 +1,32 @@
+{
+  "_comment": "域名环境映射配置 - 根据域名自动识别运行环境",
+  "environments": {
+    "prod": {
+      "name": "production",
+      "description": "生产环境域名",
+      "domains": [
+        "172.16.64.100",
+        "172.16.64.102",
+        "172.16.64.103"
+      ]
+    },
+    "show": {
+      "name": "show",
+      "description": "演示环境域名",
+      "domains": [
+        "172.16.64.104",
+        "172.16.64.105",
+        "staging.example.com"
+      ]
+    },
+    "dev": {
+      "name": "development",
+      "description": "开发环境域名（可选，默认环境）",
+      "domains": [
+        "localhost",
+        "127.0.0.1",
+        "dev.example.com"
+      ]
+    }
+  }
+}

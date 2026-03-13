@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API 测试页</title>
+</head>
+<body>
+    <h1>API 测试页</h1>
+    <script>
+        // fetch代码
+        const url = 'https://ai-gateway-show.yunzhonghe.com/ecom_reco_agent/agents/ecom-reco-agent/runs';
+        const fetchOptions = {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer test-token-123',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'message=推荐空调&session_id=111&user_id=111&stream=true'
+        };
+        fetch(url, fetchOptions)
+        .then(response => {
+            console.log('响应状态码:', response.status);
+            return response.text();
+        })
+        .then(data => console.log('响应数据:', data))
+        .catch(error => console.error('请求失败:', error));
+    </script>
+</body>
+</html>
